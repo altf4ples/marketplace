@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+bin/
+dist/
+coverage.out
+__pycache__/
+*.py[cod]

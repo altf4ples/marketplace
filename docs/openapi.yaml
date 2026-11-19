@@ -1,0 +1,202 @@
+openapi: 3.1.0
+info:
+  title: Marketplace API
+  version: 1.0.0
+  description: Учебный API маркетплейса. Не содержит аутентификации и авторизации.
+servers:
+  - url: http://localhost:8080
+paths:
+  /healthz:
+    get:
+      summary: Проверка готовности PostgreSQL и Redis
+      responses:
+        '204': { description: Dependencies are healthy }
+        '503': { description: Dependency unavailable }
+  /users:
+    post:
+      summary: Создать пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 50 }
+                phone_number: { type: [string, 'null'], maxLength: 15 }
+      responses:
+        '201': { description: User created }
+        '400': { description: Invalid request }
+        '409': { description: User conflict }
+  /store:
+    post:
+      summary: Создать магазин
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 50 }
+                description: { type: [string, 'null'], maxLength: 100 }
+      responses:
+        '201': { description: Store created }
+  /stores/{storeID}/products:
+    parameters:
+      - in: path
+        name: storeID
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Создать товар
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, price]
+              properties:
+                name: { type: string, maxLength: 200 }
+                description: { type: [string, 'null'] }
+                price: { type: string, pattern: '^[0-9]+(\.[0-9]{1,2})?$' }
+                image_url: { type: [string, 'null'], format: uri }
+      responses:
+        '201': { description: Product created }
+        '404': { description: Store not found }
+    get:
+      summary: Получить товары магазина
+      responses:
+        '200': { description: Product list }
+        '404': { description: Store not found }
+  /cart:
+    get:
+      summary: Получить корзину
+      parameters:
+        - in: query
+          name: user_id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Cart }
+    delete:
+      summary: Очистить корзину
+      parameters:
+        - in: query
+          name: user_id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Cart cleared }
+  /cart/items:
+    post:
+      summary: Добавить позицию или увеличить её количество
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, product_id, quantity]
+              properties:
+                user_id: { type: string, format: uuid }
+                product_id: { type: string, format: uuid }
+                quantity: { type: integer, minimum: 1, maximum: 1000 }
+      responses:
+        '200': { description: Updated cart }
+  /cart/items/{productID}:
+    delete:
+      summary: Удалить товар из корзины
+      parameters:
+        - in: path
+          name: productID
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: user_id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Updated cart }
+  /orders:
+    post:
+      summary: Оформить заказ из корзины
+      description: Цена и названия сохраняются в order_items; корзина восстанавливается при известных ошибках checkout.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id]
+              properties:
+                user_id: { type: string, format: uuid }
+      responses:
+        '201': { description: Order created }
+        '400': { description: Empty cart or invalid quantity }
+        '404': { description: User or product not found }
+  /orders/{orderID}:
+    get:
+      summary: Получить заказ пользователя
+      parameters:
+        - in: path
+          name: orderID
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: user_id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Order including items and state history }
+        '404': { description: Order not found }
+  /orders/{orderID}/events:
+    post:
+      summary: Применить событие к state machine
+      parameters:
+        - in: path
+          name: orderID
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, event]
+              properties:
+                user_id: { type: string, format: uuid }
+                event:
+                  type: string
+                  enum: [assemble, ship, deliver, cancel]
+      responses:
+        '200': { description: Order transitioned }
+        '403': { description: Order belongs to another user }
+        '409': { description: Invalid transition }
+  /users/{userID}/orders:
+    get:
+      summary: Список заказов пользователя
+      parameters:
+        - in: path
+          name: userID
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: User orders }
+  /users/{userID}/notifications:
+    get:
+      summary: Список уведомлений пользователя
+      parameters:
+        - in: path
+          name: userID
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        '200': { description: Notifications }
