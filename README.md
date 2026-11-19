@@ -241,36 +241,6 @@ docker compose up --build
 
 Миграции запускаются сервисом `migrate` при старте Compose. SQL-файлы имеют парные `.up.sql` и `.down.sql`.
 
-## Публикация GitHub Release
-
-Перед публикацией:
-
-1. Установить Go 1.27.3 и Docker Compose.
-2. Выполнить `make check`.
-3. Выполнить `docker compose up --build` и в другом терминале `make smoke`.
-4. Убедиться, что `.env` и секреты не попали в Git.
-5. Создать на GitHub пустой репозиторий `marketplace` (без автоматически созданных README/LICENSE).
-6. Если GitHub username отличается от `altf4ples`, заменить module path `github.com/altf4ples/marketplace` в `go.mod` и внутренних import paths на путь своего репозитория.
-
-Первичная публикация:
-
-```bash
-git init -b main
-git add .
-git commit -m "release: marketplace v1.0.0"
-git remote add origin https://github.com/<your-username>/marketplace.git
-git push -u origin main
-```
-
-Создание релиза:
-
-```bash
-git tag -a v1.0.0 -m "Marketplace v1.0.0"
-git push origin v1.0.0
-```
-
-После push тега workflow `.github/workflows/release.yml` автоматически соберёт Linux amd64/arm64 архивы и приложит их к GitHub Release. GitHub также сформирует архивы исходного кода.
-
 ## Ограничения
 
 - Нет аутентификации и авторизации: API принимает `user_id` от клиента.
