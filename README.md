@@ -29,7 +29,7 @@
 Требуется Docker Engine с Compose plugin и Git.
 
 ```bash
-git clone https://github.com/<your-username>/marketplace.git
+git clone https://github.com/altf4ples/marketplace.git
 cd marketplace
 cp .env.example .env
 ```
